@@ -1,13 +1,19 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Geist, Space_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 
-const inter = Inter({ subsets: ["latin"] });
+const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
+const mono = Space_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  weight: ["400", "700"],
+});
 
 export const metadata: Metadata = {
-  title: "AI Cup — Twitter Content Generator",
-  description: "Multi-agent AI system for generating high-quality X/Twitter content",
+  title: "AI Cup — Twitter Content Engine",
+  description:
+    "Multi-agent AI system for generating high-quality X/Twitter content",
 };
 
 export default function RootLayout({
@@ -17,38 +23,51 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} antialiased bg-zinc-950 text-zinc-100`}>
-        <div className="flex min-h-screen">
-          {/* Sidebar */}
-          <aside className="w-64 border-r border-zinc-800 p-4 flex flex-col gap-1 shrink-0">
-            <div className="px-3 py-4 mb-2">
-              <h1 className="text-lg font-bold tracking-tight">
-                🧠 AI Cup
-              </h1>
-              <p className="text-xs text-zinc-500 mt-1">Twitter Content Engine</p>
+      <body
+        className={`${geist.variable} ${mono.variable} font-sans antialiased bg-[#0a0a0b] text-zinc-100`}
+      >
+        <div className="min-h-screen flex flex-col">
+          {/* Top nav */}
+          <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#0a0a0b]/80 border-b border-white/[0.06]">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+              <a href="/" className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-xs font-bold">
+                  AI
+                </div>
+                <span className="font-semibold tracking-tight text-sm">
+                  AI Cup
+                </span>
+              </a>
+              <nav className="flex items-center gap-1">
+                <a
+                  href="/create"
+                  className="px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-white transition-colors rounded-md hover:bg-white/[0.04]"
+                >
+                  Create
+                </a>
+                <a
+                  href="/discover"
+                  className="px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-white transition-colors rounded-md hover:bg-white/[0.04]"
+                >
+                  Discover
+                </a>
+                <a
+                  href="/style"
+                  className="px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-white transition-colors rounded-md hover:bg-white/[0.04]"
+                >
+                  Style
+                </a>
+                <a
+                  href="/traces"
+                  className="px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-white transition-colors rounded-md hover:bg-white/[0.04]"
+                >
+                  Traces
+                </a>
+              </nav>
             </div>
-            <nav className="flex flex-col gap-1">
-              <a href="/" className="px-3 py-2 rounded-md text-sm hover:bg-zinc-800 transition-colors">
-                📊 Dashboard
-              </a>
-              <a href="/create" className="px-3 py-2 rounded-md text-sm hover:bg-zinc-800 transition-colors">
-                ✍️ Create
-              </a>
-              <a href="/discover" className="px-3 py-2 rounded-md text-sm hover:bg-zinc-800 transition-colors">
-                🔍 Discover
-              </a>
-              <a href="/style" className="px-3 py-2 rounded-md text-sm hover:bg-zinc-800 transition-colors">
-                🎨 Style
-              </a>
-              <a href="/traces" className="px-3 py-2 rounded-md text-sm hover:bg-zinc-800 transition-colors">
-                📋 Traces
-              </a>
-            </nav>
-          </aside>
+          </header>
           {/* Main */}
-          <main className="flex-1 overflow-auto">
-            {children}
-          </main>
+          <main className="flex-1">{children}</main>
         </div>
         <Toaster />
       </body>

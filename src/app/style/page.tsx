@@ -4,8 +4,6 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 
 interface StyleProfile {
   id: string;
@@ -29,7 +27,7 @@ export default function StylePage() {
     const res = await fetch("/api/style");
     if (res.ok) {
       const data = await res.json();
-      setProfiles(data.profiles || []);
+      setProfiles(data.profiles || data || []);
     }
   }
 
@@ -42,7 +40,7 @@ export default function StylePage() {
         .map((s) => s.trim())
         .filter(Boolean);
 
-      const res = await fetch("/api/style", {
+      await fetch("/api/style", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -52,98 +50,116 @@ export default function StylePage() {
         }),
       });
 
-      if (res.ok) {
-        setName("");
-        setDescription("");
-        setSamples("");
-        fetchProfiles();
-      }
+      setName("");
+      setDescription("");
+      setSamples("");
+      fetchProfiles();
     } finally {
       setLoading(false);
     }
   }
 
   async function handleDelete(id: string) {
-    const res = await fetch(`/api/style/${id}`, { method: "DELETE" });
-    if (res.ok) fetchProfiles();
+    await fetch(`/api/style/${id}`, { method: "DELETE" });
+    fetchProfiles();
   }
 
   return (
-    <div className="p-8 max-w-5xl">
-      <h2 className="text-2xl font-bold mb-6">Style Profiles</h2>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+      <div className="mb-8">
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
+          Style Profiles
+        </h1>
+        <p className="text-sm text-zinc-500 mt-1">
+          Teach the agents your voice with writing samples
+        </p>
+      </div>
 
-      <div className="grid grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Create */}
-        <div className="space-y-4">
-          <h3 className="text-sm font-medium text-zinc-400">
-            Create New Profile
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.01] p-5 space-y-4">
+          <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
+            New Profile
           </h3>
           <div>
-            <label className="text-sm text-zinc-400 block mb-1.5">Name</label>
+            <label className="text-xs text-zinc-400 block mb-1.5">Name</label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Paul Graham style"
+              className="bg-white/[0.02] border-white/[0.06]"
             />
           </div>
           <div>
-            <label className="text-sm text-zinc-400 block mb-1.5">
-              Description (optional)
+            <label className="text-xs text-zinc-400 block mb-1.5">
+              Description <span className="text-zinc-600">(optional)</span>
             </label>
             <Input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Brief description"
+              className="bg-white/[0.02] border-white/[0.06]"
             />
           </div>
           <div>
-            <label className="text-sm text-zinc-400 block mb-1.5">
-              Writing Samples (separate with --- )
+            <label className="text-xs text-zinc-400 block mb-1.5">
+              Writing samples{" "}
+              <span className="text-zinc-600">(separate with ---)</span>
             </label>
             <Textarea
               value={samples}
               onChange={(e) => setSamples(e.target.value)}
-              placeholder="Paste writing samples here...&#10;---&#10;Separate multiple samples with ---"
-              rows={8}
+              placeholder="Paste your writing here..."
+              rows={6}
+              className="bg-white/[0.02] border-white/[0.06] resize-none"
             />
           </div>
-          <Button onClick={handleCreate} disabled={loading || !name.trim()}>
+          <Button
+            onClick={handleCreate}
+            disabled={loading || !name.trim()}
+            className="w-full bg-white/[0.06] hover:bg-white/[0.1] text-white border-0"
+          >
             Create Profile
           </Button>
         </div>
 
         {/* Existing */}
-        <div className="space-y-4">
-          <h3 className="text-sm font-medium text-zinc-400">
-            Existing Profiles
+        <div className="space-y-3">
+          <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
+            Saved Profiles
           </h3>
           {profiles.length === 0 ? (
-            <div className="text-zinc-600 text-sm">
-              No profiles yet. Create one above.
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.01] p-8 text-center">
+              <p className="text-sm text-zinc-600">
+                No profiles yet. Create one to get started.
+              </p>
             </div>
           ) : (
             profiles.map((p) => (
-              <Card key={p.id} className="p-4 border-zinc-800">
+              <div
+                key={p.id}
+                className="rounded-xl border border-white/[0.06] bg-white/[0.01] p-4"
+              >
                 <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium">{p.name}</h4>
-                  <div className="flex gap-2">
-                    <Badge variant="secondary">
-                      {p.samples.length} samples
-                    </Badge>
+                  <h4 className="text-sm font-medium">{p.name}</h4>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-zinc-600">
+                      {Array.isArray(p.samples) ? p.samples.length : 0} samples
+                    </span>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleDelete(p.id)}
-                      className="text-red-400 hover:text-red-300"
+                      className="text-[10px] text-red-500/60 hover:text-red-400 h-6"
                     >
                       Delete
                     </Button>
                   </div>
                 </div>
                 {p.description && (
-                  <p className="text-sm text-zinc-500">{p.description}</p>
+                  <p className="text-xs text-zinc-600">{p.description}</p>
                 )}
-              </Card>
+              </div>
             ))
           )}
         </div>
