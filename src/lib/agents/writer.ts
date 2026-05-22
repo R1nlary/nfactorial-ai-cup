@@ -7,10 +7,12 @@ export class WriterAgent extends BaseAgent {
   systemPrompt = WRITER_SYSTEM_PROMPT;
 
   async run(input: {
-    angle: OutlineOutput["angles"][number];
+    angle: Record<string, any>;
     research: ResearchOutput;
     styleSamples?: string[];
     contentType: string;
+    previousDraft?: unknown;
+    styleReview?: unknown;
   }) {
     return super.run(input) as Promise<{ output: DraftOutput; trace: import("@/lib/types").AgentTraceData }>;
   }

@@ -42,9 +42,9 @@ export async function runPipeline(
   });
   traces.push(outlineResult.trace);
 
-  const bestAngle = outlineResult.output.angles.reduce((best, angle) =>
-    angle.score > best.score ? angle : best
-  );
+  // Pick the recommended approach, or first one
+  const approaches = outlineResult.output.approaches || outlineResult.output.angles || [];
+  const bestAngle = approaches[outlineResult.output.recommendedApproach ?? 0] || approaches[0] || { hook: request.topic, structure: [request.topic] };
 
   // 3-5: Iterative Draft → Review cycle
   let iteration = 0;

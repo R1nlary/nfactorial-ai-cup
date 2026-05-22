@@ -33,9 +33,10 @@ export async function POST(request: NextRequest) {
       styleSamples,
     );
 
-    const finalText = Array.isArray(editorOutput.finalContent)
-      ? editorOutput.finalContent.join("\n\n")
-      : editorOutput.finalContent;
+    const rawOutput = editorOutput.finalContent || editorOutput.content || "";
+    const finalText = Array.isArray(rawOutput)
+      ? rawOutput.join("\n\n")
+      : rawOutput;
 
     // Save to DB
     const content = await prisma.content.create({
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({
-      content: editorOutput.finalContent,
+      content: rawOutput,
       traces,
       id: content.id,
       iterations,

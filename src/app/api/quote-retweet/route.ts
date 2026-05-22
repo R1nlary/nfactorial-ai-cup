@@ -78,8 +78,9 @@ export async function POST(request: NextRequest) {
     });
     traces.push(editorResult.trace);
 
-    const finalContent = (editorResult.output as EditorOutput).finalContent;
-    const finalText = Array.isArray(finalContent) ? finalContent.join("\n\n") : finalContent;
+    const editorOut = editorResult.output as EditorOutput;
+    const rawContent = editorOut.finalContent || editorOut.content || "";
+    const finalText = Array.isArray(rawContent) ? rawContent.join("\n\n") : rawContent;
 
     // Save to DB
     const content = await prisma.content.create({
@@ -105,7 +106,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ content: finalContent, traces, id: content.id });
+    return NextResponse.json({ content: rawContent, traces, id: content.id });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Validation failed", details: error.issues }, { status: 400 });

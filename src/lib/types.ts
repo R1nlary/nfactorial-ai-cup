@@ -61,8 +61,20 @@ export interface OutlineAngle {
   score: number;
 }
 
+export interface OutlineApproach {
+  angle: string;
+  hook: string;
+  structure: string[];
+  tone: string;
+  whyItWorks: string;
+}
+
 export interface OutlineOutput {
-  angles: OutlineAngle[];
+  approaches: OutlineApproach[];
+  recommendedApproach: number;
+  keyMetaphorOrFrame?: string;
+  // Legacy support
+  angles?: OutlineAngle[];
 }
 
 export interface DraftOutput {
@@ -97,5 +109,8 @@ export interface FactCheckOutput {
 
 export interface EditorOutput {
   finalContent: string | string[];
+  content?: string | string[];
+  charCount?: number;
+  editsMade?: string[];
   changes: string[];
 }
