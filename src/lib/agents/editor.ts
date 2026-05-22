@@ -11,6 +11,8 @@ export class EditorAgent extends BaseAgent {
     styleReview: StyleReviewOutput;
     factCheck: FactCheckOutput;
     contentType: string;
+    slopPhrases?: string[];
+    slopScore?: number;
   }) {
     return super.run(input) as Promise<{ output: EditorOutput; trace: import("@/lib/types").AgentTraceData }>;
   }

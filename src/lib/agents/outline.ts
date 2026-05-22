@@ -1,22 +1,6 @@
 import { BaseAgent } from "./base-agent";
 import type { ResearchOutput, ContentType, OutlineOutput } from "@/lib/types";
-
-const OUTLINE_SYSTEM_PROMPT = `You are a content strategist who creates compelling content outlines.
-
-Given research data, content type, and style guidance, generate multiple angles with hooks, key points, and calls to action.
-Score each angle 0-100 based on potential engagement and originality.
-
-Output JSON:
-{
-  "angles": [
-    {
-      "hook": "attention-grabbing first line",
-      "points": ["key point 1", "key point 2", ...],
-      "cta": "call to action or closing thought",
-      "score": 0-100
-    }
-  ]
-}`;
+import { OUTLINE_SYSTEM_PROMPT } from "@/lib/prompts/outline";
 
 export class OutlineAgent extends BaseAgent {
   name = "outline";

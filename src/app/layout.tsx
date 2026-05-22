@@ -1,19 +1,28 @@
-import type { Metadata } from "next";
-import { Geist, Space_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { DM_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+import { Navigation } from "@/components/navigation";
 
-const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
-const mono = Space_Mono({
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-body",
+});
+
+const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
-  weight: ["400", "700"],
 });
 
 export const metadata: Metadata = {
-  title: "AI Cup — Twitter Content Engine",
+  title: "OpenClaw — Multi-Agent Content Engine",
   description:
-    "Multi-agent AI system for generating high-quality X/Twitter content",
+    "7-agent pipeline for generating high-quality Twitter content with research, fact-checking, and style emulation.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -24,50 +33,33 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${geist.variable} ${mono.variable} font-sans antialiased bg-[#0a0a0b] text-zinc-100`}
+        className={`${dmSans.variable} ${jetbrainsMono.variable} font-[var(--font-body)] antialiased bg-[#08080a] text-zinc-100`}
       >
         <div className="min-h-screen flex flex-col">
-          {/* Top nav */}
-          <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#0a0a0b]/80 border-b border-white/[0.06]">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-              <a href="/" className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-xs font-bold">
-                  AI
-                </div>
-                <span className="font-semibold tracking-tight text-sm">
-                  AI Cup
-                </span>
-              </a>
-              <nav className="flex items-center gap-1">
-                <a
-                  href="/create"
-                  className="px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-white transition-colors rounded-md hover:bg-white/[0.04]"
-                >
-                  Create
-                </a>
-                <a
-                  href="/discover"
-                  className="px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-white transition-colors rounded-md hover:bg-white/[0.04]"
-                >
-                  Discover
-                </a>
-                <a
-                  href="/style"
-                  className="px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-white transition-colors rounded-md hover:bg-white/[0.04]"
-                >
-                  Style
-                </a>
-                <a
-                  href="/traces"
-                  className="px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-white transition-colors rounded-md hover:bg-white/[0.04]"
-                >
-                  Traces
-                </a>
-              </nav>
-            </div>
-          </header>
-          {/* Main */}
+          <Navigation />
           <main className="flex-1">{children}</main>
+          <footer className="border-t border-white/[0.04] py-6">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] text-zinc-600 font-[var(--font-mono)]">
+                  nFactorial Agentic AI
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-zinc-700 font-[var(--font-mono)]">
+                  7 agents
+                </span>
+                <span className="w-1 h-1 rounded-full bg-[#f5c518]/40" />
+                <span className="text-[10px] text-zinc-700 font-[var(--font-mono)]">
+                  6 steps
+                </span>
+                <span className="w-1 h-1 rounded-full bg-[#ff6b35]/40" />
+                <span className="text-[10px] text-zinc-700 font-[var(--font-mono)]">
+                  1 pipeline
+                </span>
+              </div>
+            </div>
+          </footer>
         </div>
         <Toaster />
       </body>

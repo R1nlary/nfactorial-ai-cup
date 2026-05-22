@@ -1,17 +1,26 @@
-import type { AgentTraceData, ContentRequest, EditorOutput } from "@/lib/types";
+import type { AgentTraceData, ContentRequest, EditorOutput, DraftOutput, StyleReviewOutput, FactCheckOutput } from "@/lib/types";
 import { ResearchAgent } from "./research";
 import { OutlineAgent } from "./outline";
 import { WriterAgent } from "./writer";
 import { StyleReviewerAgent } from "./style-reviewer";
 import { FactCheckerAgent } from "./fact-checker";
 import { EditorAgent } from "./editor";
+import { detectSlop, cleanSlop } from "@/lib/anti-slop";
 
 export interface OrchestratorResult {
   content: EditorOutput;
   traces: AgentTraceData[];
+  iterations: number;
 }
 
-export async function runPipeline(request: ContentRequest): Promise<OrchestratorResult> {
+const MAX_ITERATIONS = 2;
+const SLOP_THRESHOLD = 30;
+const NATURAL_SCORE_THRESHOLD = 7;
+
+export async function runPipeline(
+  request: ContentRequest,
+  styleSamples?: string[],
+): Promise<OrchestratorResult> {
   const traces: AgentTraceData[] = [];
 
   // 1. Research
@@ -19,6 +28,8 @@ export async function runPipeline(request: ContentRequest): Promise<Orchestrator
   const researchResult = await researchAgent.run({
     topic: request.topic,
     sourceUrl: request.sourceUrl,
+    context: request.context,
+    contentType: request.type,
   });
   traces.push(researchResult.trace);
 
@@ -31,42 +42,85 @@ export async function runPipeline(request: ContentRequest): Promise<Orchestrator
   });
   traces.push(outlineResult.trace);
 
-  // Pick best angle
   const bestAngle = outlineResult.output.angles.reduce((best, angle) =>
     angle.score > best.score ? angle : best
   );
 
-  // 3. Draft
-  const writerAgent = new WriterAgent();
-  const draftResult = await writerAgent.run({
-    angle: bestAngle,
-    research: researchResult.output,
-    contentType: request.type,
-  });
-  traces.push(draftResult.trace);
+  // 3-5: Iterative Draft → Review cycle
+  let iteration = 0;
+  let currentDraft: DraftOutput | null = null;
+  let lastStyleReview: StyleReviewOutput | null = null;
+  let lastFactCheck: FactCheckOutput | null = null;
 
-  // 4. Style Review (lighter model)
-  const styleAgent = new StyleReviewerAgent();
-  const styleResult = await styleAgent.run({ draft: draftResult.output.draft });
-  traces.push(styleResult.trace);
+  while (iteration < MAX_ITERATIONS) {
+    iteration++;
 
-  // 5. Fact Check (lighter model)
-  const factAgent = new FactCheckerAgent();
-  const factResult = await factAgent.run({ draft: draftResult.output.draft });
-  traces.push(factResult.trace);
+    // 3. Draft
+    const writerAgent = new WriterAgent();
+    const writerInput = iteration === 1
+      ? { angle: bestAngle, research: researchResult.output, styleSamples, contentType: request.type }
+      : { angle: bestAngle, research: researchResult.output, styleSamples, contentType: request.type, previousDraft: currentDraft, styleReview: lastStyleReview };
 
-  // 6. Edit
+    const draftResult = await writerAgent.run(writerInput);
+    traces.push(draftResult.trace);
+
+    // Clean slop from draft before review
+    const rawDraft = draftResult.output.draft;
+    const cleanedDraft = Array.isArray(rawDraft)
+      ? rawDraft.map((t) => cleanSlop(t))
+      : cleanSlop(rawDraft);
+
+    currentDraft = { ...draftResult.output, draft: cleanedDraft };
+
+    // 4-5. Style Review + Fact Check in parallel
+    const styleAgent = new StyleReviewerAgent();
+    const factAgent = new FactCheckerAgent();
+
+    const [styleResult, factResult] = await Promise.all([
+      styleAgent.run({ draft: currentDraft.draft, styleSamples }),
+      factAgent.run({ draft: currentDraft.draft }),
+    ]);
+    traces.push(styleResult.trace);
+    traces.push(factResult.trace);
+
+    lastStyleReview = styleResult.output;
+    lastFactCheck = factResult.output;
+
+    // Check quality — if good enough, stop iterating
+    const slopCheck = detectSlop(
+      Array.isArray(currentDraft.draft)
+        ? currentDraft.draft.join(" ")
+        : currentDraft.draft
+    );
+
+    const qualityOk =
+      slopCheck.score <= SLOP_THRESHOLD &&
+      lastStyleReview.naturalScore >= NATURAL_SCORE_THRESHOLD * 10;
+
+    if (qualityOk || iteration >= MAX_ITERATIONS) break;
+  }
+
+  // 6. Edit — pass all review data
   const editorAgent = new EditorAgent();
+  const slopResult = detectSlop(
+    Array.isArray(currentDraft!.draft)
+      ? currentDraft!.draft.join(" ")
+      : currentDraft!.draft
+  );
+
   const editorResult = await editorAgent.run({
-    draft: draftResult.output,
-    styleReview: styleResult.output,
-    factCheck: factResult.output,
+    draft: currentDraft!,
+    styleReview: lastStyleReview!,
+    factCheck: lastFactCheck!,
     contentType: request.type,
+    slopPhrases: slopResult.found,
+    slopScore: slopResult.score,
   });
   traces.push(editorResult.trace);
 
   return {
     content: editorResult.output,
     traces,
+    iterations: iteration,
   };
 }

@@ -8,38 +8,7 @@ export async function scrapeArxiv(): Promise<DiscoveredItem[]> {
     if (!res.ok) throw new Error(`arXiv API ${res.status}`);
 
     const xml = await res.text();
-    const doc = new DOMParser
-      ? new DOMParser().parseFromString(xml, "text/xml")
-      : null;
-
-    // Node.js fallback: manual regex parsing (no DOMParser in Node)
-    if (!doc) {
-      return parseArxivXml(xml);
-    }
-
-    const entries = doc.getElementsByTagName("entry");
-    const items: DiscoveredItem[] = [];
-
-    for (let i = 0; i < entries.length; i++) {
-      const entry = entries[i];
-      const title = entry.getElementsByTagName("title")[0]?.textContent?.trim() ?? "";
-      const summary = entry.getElementsByTagName("summary")[0]?.textContent?.trim() ?? "";
-      const id = entry.getElementsByTagName("id")[0]?.textContent?.trim() ?? "";
-      const published = entry.getElementsByTagName("published")[0]?.textContent?.trim() ?? "";
-      const authors = Array.from(entry.getElementsByTagName("author"))
-        .map((a) => a.getElementsByTagName("name")[0]?.textContent?.trim() ?? "")
-        .filter(Boolean);
-
-      items.push({
-        source: "arxiv",
-        title,
-        url: id,
-        summary: summary.slice(0, 500),
-        tags: ["research", "arxiv", ...published ? [published.slice(0, 10)] : []],
-      });
-    }
-
-    return items;
+    return parseArxivXml(xml);
   } catch (err) {
     console.error("arXiv scraper failed:", err);
     return [];

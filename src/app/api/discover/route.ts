@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { scrapeHackerNews } from "@/lib/scrapers/hackernews";
+import { scrapeArxiv } from "@/lib/scrapers/arxiv";
+import { scrapeSubstack } from "@/lib/scrapers/substack";
 import type { DiscoveredItem } from "@/lib/types";
 
 const discoverSchema = z.object({
-  source: z.enum(["hackernews", "arxiv", "substack"]).optional().default("hackernews"),
+  source: z.enum(["all", "hackernews", "arxiv", "substack"]).optional().default("all"),
   limit: z.coerce.number().min(1).max(100).optional().default(20),
 });
 
@@ -19,18 +21,28 @@ export async function GET(request: NextRequest) {
 
     let items: DiscoveredItem[] = [];
 
-    switch (parsed.source) {
-      case "hackernews":
-        items = await scrapeHackerNews();
-        break;
-      case "arxiv":
-        // Placeholder: arxiv scraper not yet implemented
-        items = [];
-        break;
-      case "substack":
-        // Placeholder: substack scraper not yet implemented
-        items = [];
-        break;
+    if (parsed.source === "all") {
+      const results = await Promise.allSettled([
+        scrapeHackerNews(),
+        scrapeArxiv(),
+        scrapeSubstack(),
+      ]);
+      for (const r of results) {
+        if (r.status === "fulfilled") items.push(...r.value);
+        else console.error("Scraper failed:", r.reason);
+      }
+    } else {
+      switch (parsed.source) {
+        case "hackernews":
+          items = await scrapeHackerNews();
+          break;
+        case "arxiv":
+          items = await scrapeArxiv();
+          break;
+        case "substack":
+          items = await scrapeSubstack();
+          break;
+      }
     }
 
     items = items.slice(0, parsed.limit);

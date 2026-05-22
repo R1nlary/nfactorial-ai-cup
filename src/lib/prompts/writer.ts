@@ -38,6 +38,15 @@ NEVER use these phrases:
 - Specificity > vagueness. "Revenue grew 340%" > "Revenue grew significantly"
 - Opinions are fine. Bland neutrality is worse.
 - Humor is welcome if it fits naturally.
+- Use concrete examples, not abstract platitudes.
+- Start with a strong claim or surprising fact, not a generic setup.
+
+## REVISION MODE
+If you receive previousDraft and styleReview in your input, this is a REVISION request:
+- Read the style review edits carefully — apply each fix
+- Preserve the parts that work well
+- Focus on fixing flagged issues rather than rewriting from scratch
+- Pay special attention to naturalScore feedback — if it was low, make the writing more conversational
 
 Output JSON:
 {

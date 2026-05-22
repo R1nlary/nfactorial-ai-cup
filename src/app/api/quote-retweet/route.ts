@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { BaseAgent } from "@/lib/agents/base-agent";
-import { WRITER_SYSTEM_PROMPT } from "@/lib/prompts/writer";
-import { EDITOR_SYSTEM_PROMPT } from "@/lib/prompts/editor";
+import { WriterAgent } from "@/lib/agents/writer";
+import { StyleReviewerAgent } from "@/lib/agents/style-reviewer";
+import { FactCheckerAgent } from "@/lib/agents/fact-checker";
+import { EditorAgent } from "@/lib/agents/editor";
+import { detectSlop, cleanSlop } from "@/lib/anti-slop";
 import type { AgentTraceData, EditorOutput } from "@/lib/types";
 
 const quoteRetweetSchema = z.object({
@@ -13,80 +15,70 @@ const quoteRetweetSchema = z.object({
   styleProfileId: z.string().optional(),
 });
 
-class QuoteTweetAgent extends BaseAgent {
-  name = "quote-tweet-writer";
-  systemPrompt = WRITER_SYSTEM_PROMPT;
-}
-
-class EditorAgent extends BaseAgent {
-  name = "editor";
-  systemPrompt = EDITOR_SYSTEM_PROMPT;
-}
-
-class StyleCheckAgent extends BaseAgent {
-  name = "style-checker";
-  systemPrompt = `You review content against a style profile and suggest improvements to match the voice.
-Output JSON: { "matches": boolean, "suggestions": ["suggestion1", ...], "adjustedContent": "final adjusted text" }`;
-}
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const parsed = quoteRetweetSchema.parse(body);
-
     const traces: AgentTraceData[] = [];
 
-    // Step 1: Research tweet context
-    const contextInfo = {
-      tweetUrl: parsed.tweetUrl,
-      tweetText: parsed.tweetText ?? "Unknown tweet content",
-      angle: parsed.angle,
-    };
-
-    // Step 2: Generate quote tweet response
-    const writer = new QuoteTweetAgent();
-    const { output: draftOutput, trace: writerTrace } = await writer.run({
-      task: "quote_retweet",
-      originalTweet: contextInfo.tweetText,
-      tweetUrl: parsed.tweetUrl,
-      angle: parsed.angle,
-      maxLength: 280,
-    });
-    traces.push(writerTrace);
-
-    // Step 3: Style check if profile provided
-    let adjustedContent = (draftOutput as { draft: string }).draft;
-
+    // Fetch style samples if profile specified
+    let styleSamples: string[] | undefined;
     if (parsed.styleProfileId) {
-      const styleProfile = await prisma.styleProfile.findUnique({
+      const profile = await prisma.styleProfile.findUnique({
         where: { id: parsed.styleProfileId },
       });
-
-      if (styleProfile) {
-        const styleChecker = new StyleCheckAgent();
-        const { output: styleOutput, trace: styleTrace } = await styleChecker.run({
-          content: adjustedContent,
-          styleSamples: styleProfile.samples,
-          description: styleProfile.description,
-        });
-        traces.push(styleTrace);
-
-        const style = styleOutput as { adjustedContent?: string };
-        if (style.adjustedContent) {
-          adjustedContent = style.adjustedContent;
-        }
-      }
+      if (profile) styleSamples = profile.samples;
     }
 
-    // Step 4: Final edit
-    const editor = new EditorAgent();
-    const { output: editorOutput, trace: editorTrace } = await editor.run({
-      draft: { draft: adjustedContent },
-      type: "quote_retweet",
+    // 1. Write quote tweet
+    const writer = new WriterAgent();
+    const draftResult = await writer.run({
+      angle: {
+        hook: `Quote retweet with angle: ${parsed.angle}`,
+        points: [`React to: ${parsed.tweetText ?? parsed.tweetUrl}`],
+        cta: "",
+        score: 80,
+      },
+      research: {
+        themes: [parsed.angle],
+        dataPoints: [],
+        angles: [`${parsed.angle} take on the original tweet`],
+        sources: [parsed.tweetUrl],
+      },
+      styleSamples,
+      contentType: "quote_retweet",
     });
-    traces.push(editorTrace);
+    traces.push(draftResult.trace);
 
-    const finalContent = (editorOutput as EditorOutput).finalContent;
+    // Clean slop from draft
+    const rawDraft = draftResult.output.draft;
+    const cleanedDraft = Array.isArray(rawDraft) ? rawDraft.map(cleanSlop) : cleanSlop(rawDraft);
+
+    // 2. Style review + fact check in parallel
+    const [styleResult, factResult] = await Promise.all([
+      new StyleReviewerAgent().run({ draft: cleanedDraft, styleSamples }),
+      new FactCheckerAgent().run({ draft: cleanedDraft }),
+    ]);
+    traces.push(styleResult.trace);
+    traces.push(factResult.trace);
+
+    // 3. Edit with full feedback
+    const slopResult = detectSlop(
+      Array.isArray(cleanedDraft) ? cleanedDraft.join(" ") : cleanedDraft,
+    );
+
+    const editor = new EditorAgent();
+    const editorResult = await editor.run({
+      draft: { draft: cleanedDraft, wordCount: draftResult.output.wordCount },
+      styleReview: styleResult.output,
+      factCheck: factResult.output,
+      contentType: "quote_retweet",
+      slopPhrases: slopResult.found,
+      slopScore: slopResult.score,
+    });
+    traces.push(editorResult.trace);
+
+    const finalContent = (editorResult.output as EditorOutput).finalContent;
     const finalText = Array.isArray(finalContent) ? finalContent.join("\n\n") : finalContent;
 
     // Save to DB
@@ -95,7 +87,7 @@ export async function POST(request: NextRequest) {
         type: "quote_retweet",
         topic: parsed.tweetUrl,
         input: JSON.stringify(parsed),
-        drafts: [draftOutput as string],
+        drafts: [JSON.stringify(draftResult.output)],
         finalContent: finalText,
         status: "completed",
         styleProfileId: parsed.styleProfileId,

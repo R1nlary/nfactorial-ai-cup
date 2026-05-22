@@ -6,7 +6,7 @@ export class ResearchAgent extends BaseAgent {
   name = "research";
   systemPrompt = RESEARCH_SYSTEM_PROMPT;
 
-  async run(input: { topic?: string; sourceUrl?: string }) {
+  async run(input: { topic?: string; sourceUrl?: string; context?: string; contentType?: string }) {
     return super.run(input) as Promise<{ output: ResearchOutput; trace: import("@/lib/types").AgentTraceData }>;
   }
 }
