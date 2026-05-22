@@ -3,10 +3,16 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 
 export async function GET() {
-  const memories = await prisma.userMemory.findMany({
-    orderBy: { updatedAt: "desc" },
-  });
-  return NextResponse.json({ memories });
+  try {
+    const memories = await prisma.userMemory.findMany({
+      orderBy: { updatedAt: "desc" },
+      take: 50,
+    });
+    return NextResponse.json({ memories });
+  } catch (error) {
+    console.error("Memory list error:", error);
+    return NextResponse.json({ error: "Failed to load memories" }, { status: 500 });
+  }
 }
 
 const memorySchema = z.object({

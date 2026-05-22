@@ -38,15 +38,29 @@ export async function POST(request: NextRequest) {
       topic: parsed.topic,
     });
 
-    // Save plan to DB
-    const plan = await prisma.distributionPlan.create({
-      data: {
-        contentId: contentId || null,
-        platform: "twitter",
-        status: "draft",
-        strategy: JSON.stringify(result.output),
-      },
-    });
+    // Persist the plan and the agent trace (so it shows on the Traces page)
+    const [plan] = await Promise.all([
+      prisma.distributionPlan.create({
+        data: {
+          contentId: contentId || null,
+          platform: "twitter",
+          status: "draft",
+          strategy: JSON.stringify(result.output),
+        },
+      }),
+      prisma.agentTrace.create({
+        data: {
+          contentId: contentId || null,
+          agentName: result.trace.agentName,
+          input: result.trace.input as any,
+          output: result.trace.output as any,
+          reasoning: result.trace.reasoning,
+          model: result.trace.model,
+          tokens: result.trace.tokens as any,
+          durationMs: result.trace.durationMs,
+        },
+      }),
+    ]);
 
     return NextResponse.json({
       plan: result.output,
@@ -54,6 +68,9 @@ export async function POST(request: NextRequest) {
       trace: result.trace,
     });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: "Validation failed", details: error.issues }, { status: 400 });
+    }
     console.error("Distribution error:", error);
     return NextResponse.json({ error: "Failed to generate distribution plan" }, { status: 500 });
   }

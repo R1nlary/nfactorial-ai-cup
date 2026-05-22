@@ -10,13 +10,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // Accept text files, markdown, PDF names
-    const allowed = [
-      "text/plain", "text/markdown", "text/csv",
-      "application/pdf",
-    ];
+    // Accept plain-text formats only
+    const allowed = ["text/plain", "text/markdown", "text/csv", "application/json"];
     const ext = file.name.split(".").pop()?.toLowerCase();
-    const allowedExt = ["txt", "md", "csv", "json", "pdf"];
+    const allowedExt = ["txt", "md", "csv", "json"];
 
     if (!allowed.includes(file.type) && !allowedExt.includes(ext || "")) {
       return NextResponse.json(
@@ -25,16 +22,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For text-based files, read content directly
-    let content: string;
-    if (file.type === "application/pdf") {
-      // PDF — read as text (best effort)
-      const buffer = Buffer.from(await file.arrayBuffer());
-      content = buffer.toString("utf-8").replace(/[^\x20-\x7E\n\r\t]/g, " ").trim();
-    } else {
-      content = await file.text();
-    }
-
+    let content = await file.text();
     if (content.length > 100_000) {
       content = content.slice(0, 100_000);
     }
@@ -61,17 +49,22 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
-  const docs = await prisma.uploadedDocument.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 20,
-  });
-  return NextResponse.json({
-    documents: docs.map((d) => ({
-      id: d.id,
-      filename: d.filename,
-      size: d.size,
-      preview: d.content.slice(0, 200),
-      createdAt: d.createdAt,
-    })),
-  });
+  try {
+    const docs = await prisma.uploadedDocument.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    });
+    return NextResponse.json({
+      documents: docs.map((d) => ({
+        id: d.id,
+        filename: d.filename,
+        size: d.size,
+        preview: d.content.slice(0, 200),
+        createdAt: d.createdAt,
+      })),
+    });
+  } catch (error) {
+    console.error("List documents error:", error);
+    return NextResponse.json({ error: "Failed to list documents" }, { status: 500 });
+  }
 }

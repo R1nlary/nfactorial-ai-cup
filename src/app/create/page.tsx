@@ -70,6 +70,7 @@ export default function CreatePage() {
   const [uploadedFiles, setUploadedFiles] = useState<Array<{ id: string; filename: string }>>([]);
   const [distributionPlan, setDistributionPlan] = useState<Record<string, unknown> | null>(null);
   const [showDistribution, setShowDistribution] = useState(false);
+  const [distributing, setDistributing] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -93,6 +94,8 @@ export default function CreatePage() {
     setTraces([]);
     setShowTraces(false);
     setTotalTime(0);
+    setDistributionPlan(null);
+    setShowDistribution(false);
 
     const freshSteps = STEPS.map((s) => ({ ...s, status: "waiting" as StepStatus }));
     setSteps(freshSteps);
@@ -185,20 +188,22 @@ export default function CreatePage() {
   }
 
   async function handleDistribute() {
-    if (!resultText) return;
-    setShowDistribution(true);
+    if (!resultText || distributing) return;
+    setDistributing(true);
     try {
       const res = await fetch("/api/distribute", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: resultText, contentType, topic }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        setDistributionPlan(data.plan);
-      }
+      if (!res.ok) throw new Error("Distribution planning failed");
+      const data = await res.json();
+      setDistributionPlan(data.plan);
+      setShowDistribution(true);
     } catch {
       toast.error("Distribution planning failed");
+    } finally {
+      setDistributing(false);
     }
   }
 
@@ -318,7 +323,7 @@ export default function CreatePage() {
               <input
                 type="file"
                 className="hidden"
-                accept=".txt,.md,.csv,.json,.pdf"
+                accept=".txt,.md,.csv,.json"
                 multiple
                 onChange={handleFileUpload}
               />
@@ -474,9 +479,14 @@ export default function CreatePage() {
                     size="sm"
                     className="text-[11px] text-zinc-500 hover:text-[#f5c518] h-7 px-2"
                     onClick={handleDistribute}
+                    disabled={distributing}
                   >
-                    <Send className="w-3 h-3 mr-1" />
-                    Distribute
+                    {distributing ? (
+                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                    ) : (
+                      <Send className="w-3 h-3 mr-1" />
+                    )}
+                    {distributing ? "Planning..." : "Distribute"}
                   </Button>
                   <Button
                     variant="ghost"

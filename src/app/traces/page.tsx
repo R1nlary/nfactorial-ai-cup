@@ -24,6 +24,7 @@ const AGENT_COLORS: Record<string, string> = {
   "style-reviewer": "#a78bfa",
   "fact-checker": "#34d399",
   outline: "#ff6b35",
+  distribution: "#06b6d4",
 };
 
 function formatJson(obj: unknown): string {

@@ -39,8 +39,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Fetch user memories as context
-    const memories = await prisma.userMemory.findMany();
+    // Fetch user memories as context (capped to keep prompt size sane)
+    const memories = await prisma.userMemory.findMany({
+      orderBy: { updatedAt: "desc" },
+      take: 50,
+    });
     const memoryContext = memories.length
       ? memories.map((m) => `${m.key}: ${m.value}`).join("\n")
       : undefined;

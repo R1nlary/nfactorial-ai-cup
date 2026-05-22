@@ -6,6 +6,7 @@ export interface ContentRequest {
   styleProfileId?: string;
   context?: string;
   sourceUrl?: string;
+  documentIds?: string[];
 }
 
 export interface AgentInput {

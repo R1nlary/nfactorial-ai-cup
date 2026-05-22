@@ -42,10 +42,16 @@ export default function MemoryPage() {
   }, []);
 
   async function fetchMemories() {
-    const res = await fetch("/api/memory");
-    if (res.ok) {
-      const data = await res.json();
-      setMemories(data.memories || []);
+    try {
+      const res = await fetch("/api/memory");
+      if (res.ok) {
+        const data = await res.json();
+        setMemories(data.memories || []);
+      } else {
+        toast.error("Failed to load memories");
+      }
+    } catch {
+      toast.error("Failed to load memories");
     }
   }
 
@@ -63,7 +69,11 @@ export default function MemoryPage() {
         setValue("");
         fetchMemories();
         toast.success("Memory saved");
+      } else {
+        toast.error("Failed to save memory");
       }
+    } catch {
+      toast.error("Failed to save memory");
     } finally {
       setLoading(false);
     }
