@@ -36,6 +36,7 @@ model Content {
   finalContent   String?
   status         String       @default("draft")
   agentTraces    AgentTrace[]
+  distributionPlans DistributionPlan[]
   styleProfile   StyleProfile? @relation(fields: [styleProfileId], references: [id])
   styleProfileId String?
   createdAt      DateTime     @default(now())
@@ -54,4 +55,33 @@ model AgentTrace {
   tokens     Json?
   durationMs Int
   timestamp  DateTime  @default(now())
+}
+
+model UploadedDocument {
+  id          String   @id @default(cuid())
+  filename    String
+  content     String
+  mimeType    String
+  size        Int
+  createdAt   DateTime @default(now())
+}
+
+model UserMemory {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  category  String   @default("preference")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DistributionPlan {
+  id          String    @id @default(cuid())
+  contentId   String?
+  content     Content?  @relation(fields: [contentId], references: [id])
+  platform    String    @default("twitter")
+  scheduledAt DateTime?
+  status      String    @default("draft")
+  strategy    String?
+  createdAt   DateTime  @default(now())
 }

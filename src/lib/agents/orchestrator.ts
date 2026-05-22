@@ -14,7 +14,7 @@ export interface OrchestratorResult {
 }
 
 const MAX_ITERATIONS = 2;
-const SLOP_THRESHOLD = 30;
+const SLOP_THRESHOLD = 20;
 const NATURAL_SCORE_THRESHOLD = 7;
 
 export async function runPipeline(

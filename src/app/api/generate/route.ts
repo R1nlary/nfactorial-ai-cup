@@ -10,6 +10,7 @@ const generateSchema = z.object({
   styleProfileId: z.string().optional(),
   context: z.string().optional(),
   sourceUrl: z.string().optional(),
+  documentIds: z.array(z.string()).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -26,6 +27,32 @@ export async function POST(request: NextRequest) {
       });
       if (profile) styleSamples = profile.samples;
     }
+
+    // Fetch uploaded documents as context
+    let documentContext: string | undefined;
+    if (parsed.documentIds?.length) {
+      const docs = await prisma.uploadedDocument.findMany({
+        where: { id: { in: parsed.documentIds } },
+      });
+      if (docs.length) {
+        documentContext = docs.map((d) => `--- ${d.filename} ---\n${d.content.slice(0, 3000)}`).join("\n\n");
+      }
+    }
+
+    // Fetch user memories as context
+    const memories = await prisma.userMemory.findMany();
+    const memoryContext = memories.length
+      ? memories.map((m) => `${m.key}: ${m.value}`).join("\n")
+      : undefined;
+
+    // Merge all context
+    const fullContext = [
+      parsed.context,
+      documentContext,
+      memoryContext ? `User preferences:\n${memoryContext}` : undefined,
+    ].filter(Boolean).join("\n\n") || undefined;
+
+    contentRequest.context = fullContext;
 
     // Run the full 6-agent pipeline
     const { content: editorOutput, traces, iterations } = await runPipeline(

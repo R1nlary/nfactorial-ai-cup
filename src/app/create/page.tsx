@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -15,6 +15,10 @@ import {
   ChevronUp,
   Loader2,
   Sparkles,
+  Upload,
+  X,
+  Send,
+  Brain,
 } from "lucide-react";
 
 type ContentType = "tweet" | "thread" | "quote_retweet" | "article";
@@ -63,6 +67,9 @@ export default function CreatePage() {
   const [showTraces, setShowTraces] = useState(false);
   const [totalTime, setTotalTime] = useState<number>(0);
   const [topicError, setTopicError] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<Array<{ id: string; filename: string }>>([]);
+  const [distributionPlan, setDistributionPlan] = useState<Record<string, unknown> | null>(null);
+  const [showDistribution, setShowDistribution] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -114,6 +121,7 @@ export default function CreatePage() {
           topic,
           type: contentType,
           context: context || undefined,
+          documentIds: uploadedFiles.map((f) => f.id),
         }),
       });
 
@@ -148,6 +156,50 @@ export default function CreatePage() {
   function handleCopy() {
     navigator.clipboard.writeText(resultText);
     toast.success("Copied to clipboard");
+  }
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files) return;
+    for (const file of Array.from(files)) {
+      const formData = new FormData();
+      formData.append("file", file);
+      try {
+        const res = await fetch("/api/upload", { method: "POST", body: formData });
+        if (res.ok) {
+          const data = await res.json();
+          setUploadedFiles((prev) => [...prev, { id: data.id, filename: data.filename }]);
+          toast.success(`Uploaded: ${data.filename}`);
+        } else {
+          toast.error(`Failed to upload: ${file.name}`);
+        }
+      } catch {
+        toast.error(`Failed to upload: ${file.name}`);
+      }
+    }
+    e.target.value = "";
+  }
+
+  function removeFile(id: string) {
+    setUploadedFiles((prev) => prev.filter((f) => f.id !== id));
+  }
+
+  async function handleDistribute() {
+    if (!resultText) return;
+    setShowDistribution(true);
+    try {
+      const res = await fetch("/api/distribute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: resultText, contentType, topic }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDistributionPlan(data.plan);
+      }
+    } catch {
+      toast.error("Distribution planning failed");
+    }
   }
 
   const resultText =
@@ -253,6 +305,37 @@ export default function CreatePage() {
               rows={2}
               className="bg-[#0e0e11] border-white/[0.06] resize-none text-sm focus:border-[#f5c518]/30 focus:ring-0"
             />
+          </div>
+
+          {/* File Upload */}
+          <div>
+            <label className="font-[var(--font-mono)] text-[10px] tracking-wider text-zinc-500 uppercase block mb-2">
+              Documents <span className="text-zinc-700">(optional)</span>
+            </label>
+            <label className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-dashed border-white/[0.08] bg-[#0e0e11] cursor-pointer hover:border-[#f5c518]/20 transition-colors">
+              <Upload className="w-3.5 h-3.5 text-zinc-600" />
+              <span className="text-xs text-zinc-600">Upload .txt, .md, .csv, .json</span>
+              <input
+                type="file"
+                className="hidden"
+                accept=".txt,.md,.csv,.json,.pdf"
+                multiple
+                onChange={handleFileUpload}
+              />
+            </label>
+            {uploadedFiles.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {uploadedFiles.map((f) => (
+                  <div key={f.id} className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-white/[0.02] border border-white/[0.04]">
+                    <FileText className="w-3 h-3 text-zinc-600 shrink-0" />
+                    <span className="text-[11px] text-zinc-400 truncate flex-1">{f.filename}</span>
+                    <button onClick={() => removeFile(f.id)} className="text-zinc-600 hover:text-red-400 transition-colors">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Generate */}
@@ -390,6 +473,15 @@ export default function CreatePage() {
                     variant="ghost"
                     size="sm"
                     className="text-[11px] text-zinc-500 hover:text-[#f5c518] h-7 px-2"
+                    onClick={handleDistribute}
+                  >
+                    <Send className="w-3 h-3 mr-1" />
+                    Distribute
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-[11px] text-zinc-500 hover:text-[#f5c518] h-7 px-2"
                     onClick={handleCopy}
                   >
                     <Copy className="w-3 h-3 mr-1" />
@@ -440,6 +532,46 @@ export default function CreatePage() {
                   </div>
                 )}
               </div>
+
+              {/* Distribution panel */}
+              {showDistribution && distributionPlan && (
+                <div className="border-t border-white/[0.04] px-5 py-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Send className="w-3 h-3 text-[#f5c518]" />
+                    <span className="text-[10px] font-[var(--font-mono)] text-[#f5c518] uppercase tracking-wider font-medium">
+                      Distribution Plan
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <span className="text-zinc-600 block mb-0.5">Best time</span>
+                      <span className="text-zinc-300">{String(distributionPlan.bestPostTime || "N/A")}</span>
+                    </div>
+                    <div>
+                      <span className="text-zinc-600 block mb-0.5">Format</span>
+                      <span className="text-zinc-300">{String(distributionPlan.format || "single")}</span>
+                    </div>
+                    <div>
+                      <span className="text-zinc-600 block mb-0.5">Viral potential</span>
+                      <span className="text-[#f5c518]">{String(distributionPlan.viralPotential || "?")}/10</span>
+                    </div>
+                    <div>
+                      <span className="text-zinc-600 block mb-0.5">Follow-up</span>
+                      <span className="text-zinc-300">{String(distributionPlan.followUpStrategy || "N/A").slice(0, 100)}</span>
+                    </div>
+                  </div>
+                  {Array.isArray(distributionPlan.engagementHooks) && distributionPlan.engagementHooks.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-white/[0.04]">
+                      <span className="text-zinc-600 text-[10px] block mb-1">Engagement hooks</span>
+                      <ul className="space-y-0.5">
+                        {(distributionPlan.engagementHooks as string[]).map((h: string, i: number) => (
+                          <li key={i} className="text-[11px] text-zinc-400">• {h}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Traces toggle */}
               {traces.length > 0 && (

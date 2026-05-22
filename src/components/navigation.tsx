@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Zap, PenLine, Compass, Palette, Activity, Menu, X } from "lucide-react";
+import { Zap, PenLine, Compass, Palette, Activity, Brain, Menu, X } from "lucide-react";
 import { useState } from "react";
 
 const NAV_ITEMS = [
@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { href: "/discover", label: "Discover", icon: Compass },
   { href: "/style", label: "Style", icon: Palette },
   { href: "/traces", label: "Traces", icon: Activity },
+  { href: "/memory", label: "Memory", icon: Brain },
 ];
 
 export function Navigation() {
