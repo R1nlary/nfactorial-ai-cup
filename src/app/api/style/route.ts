@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     const profile = await prisma.styleProfile.create({
       data: {
         name: parsed.name,
-        samples: JSON.stringify(parsed.samples),
+        samples: parsed.samples,
         description: parsed.description,
       },
     });

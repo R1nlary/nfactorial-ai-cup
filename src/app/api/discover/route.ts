@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
           title: item.title,
           summary: item.summary,
           score: item.score,
-          tags: (item.tags ?? []).join(","),
+          tags: (item.tags ?? []),
         },
         create: {
           source: item.source,
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
           url: item.url,
           summary: item.summary,
           score: item.score,
-          tags: (item.tags ?? []).join(","),
+          tags: (item.tags ?? []),
         },
       });
     }

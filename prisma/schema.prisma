@@ -3,14 +3,14 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model StyleProfile {
   id          String     @id @default(cuid())
   name        String
-  samples     String
+  samples     String[]
   description String?
   createdAt   DateTime   @default(now())
   contents    Content[]
@@ -23,7 +23,7 @@ model DiscoveredContent {
   url          String   @unique
   summary      String?
   score        Int?
-  tags         String
+  tags         String[]
   discoveredAt DateTime @default(now())
 }
 
@@ -32,7 +32,7 @@ model Content {
   type           String       @default("tweet")
   topic          String
   input          String
-  drafts         String
+  drafts         Json[]
   finalContent   String?
   status         String       @default("draft")
   agentTraces    AgentTrace[]
@@ -47,11 +47,11 @@ model AgentTrace {
   contentId  String?
   content    Content?  @relation(fields: [contentId], references: [id])
   agentName  String
-  input      String
-  output     String
+  input      Json
+  output     Json
   reasoning  String?
   model      String
-  tokens     String?
+  tokens     Json?
   durationMs Int
   timestamp  DateTime  @default(now())
 }
