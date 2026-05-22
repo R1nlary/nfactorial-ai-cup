@@ -1,6 +1,6 @@
 # Prism — Multi-Agent Twitter Content Engine
 
-> **nFactorial Agentic AI Engineer Hiring Test** — Bauyrzhan Samen
+> **nFactorial Agentic AI Engineer Hiring Test** — Bauyrzhan Shamen
 
 Multi-agent AI system that generates high-quality, non-generic X/Twitter content through a 6-step agent pipeline with iterative critique, fact-checking, style emulation, file upload, memory, and distribution planning.
 
