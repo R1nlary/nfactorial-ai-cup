@@ -15,7 +15,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "OpenClaw — Multi-Agent Content Engine",
+  title: "Prism — Multi-Agent Content Engine",
   description:
     "7-agent pipeline for generating high-quality Twitter content with research, fact-checking, and style emulation.",
 };

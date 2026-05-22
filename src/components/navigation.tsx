@@ -24,11 +24,8 @@ export function Navigation() {
             <Zap className="w-3.5 h-3.5 text-[#f5c518]" />
           </div>
           <div className="flex items-baseline gap-1.5">
-            <span className="font-[var(--font-mono)] text-[12px] tracking-wide text-white font-semibold">
-              OpenClaw
-            </span>
-            <span className="hidden sm:inline text-[9px] text-zinc-600 font-[var(--font-mono)]">
-              v1.0
+            <span className="font-[var(--font-mono)] text-[13px] tracking-wide text-white font-semibold">
+              Prism
             </span>
           </div>
         </Link>
