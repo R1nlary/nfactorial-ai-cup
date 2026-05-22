@@ -45,7 +45,25 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    items = items.slice(0, parsed.limit);
+    // Interleave results from different sources so no single source dominates
+    const bySource = new Map<string, DiscoveredItem[]>();
+    for (const item of items) {
+      const arr = bySource.get(item.source) || [];
+      arr.push(item);
+      bySource.set(item.source, arr);
+    }
+    const interleaved: DiscoveredItem[] = [];
+    const sourceLists = [...bySource.values()];
+    let idx = 0;
+    while (interleaved.length < parsed.limit && sourceLists.some(l => l.length > idx)) {
+      for (const list of sourceLists) {
+        if (list[idx] && interleaved.length < parsed.limit) {
+          interleaved.push(list[idx]);
+        }
+      }
+      idx++;
+    }
+    items = interleaved;
 
     // Save discovered items to DB
     for (const item of items) {

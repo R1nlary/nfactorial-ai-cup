@@ -4,17 +4,24 @@ const FEEDS = [
   { name: "Stratechery", url: "https://stratechery.com/feed" },
   { name: "Lenny's Newsletter", url: "https://lennysnewsletter.com/feed" },
   { name: "One Useful Thing", url: "https://www.oneusefulthing.org/feed" },
-  { name: "Ben's Bites", url: "https://bensbites.beehiiv.com/feed" },
-  { name: "The Rundown", url: "https://www.therundown.ai/feed" },
-  { name: "Superhuman AI", url: "https://www.superhuman.ai/feed" },
-  { name: "Ahead of AI", url: "https://aheadof.ai/feed" },
   { name: "Latent Space", url: "https://www.latent.space/feed" },
+  { name: "The Pragmatic Engineer", url: "https://blog.pragmaticengineer.com/feed" },
+  { name: "Simon Willison", url: "https://simonwillison.net/atom/everything/" },
+  { name: "Interconnected", url: "https://interconnected.org/feed" },
 ];
 
-function parseRssXml(xml: string, sourceName: string): DiscoveredItem[] {
+const FETCH_OPTS: RequestInit = {
+  headers: {
+    "User-Agent": "Mozilla/5.0 (compatible; AI-Cup-Bot/1.0; +https://nfactorial-ai-cup.vercel.app)",
+    "Accept": "application/rss+xml, application/atom+xml, application/xml, text/xml, */*",
+  },
+  signal: AbortSignal.timeout(12000),
+};
+
+function parseXml(xml: string, sourceName: string): DiscoveredItem[] {
   const items: DiscoveredItem[] = [];
-  // Split on <item> tags
-  const entries = xml.split(/<item[^>]*>/i).slice(1);
+  // Handle both RSS <item> and Atom <entry>
+  const entries = xml.split(/<(?:item|entry)[^>]*>/i).slice(1);
 
   for (const entry of entries) {
     const getText = (tag: string) => {
@@ -22,11 +29,16 @@ function parseRssXml(xml: string, sourceName: string): DiscoveredItem[] {
       return m ? m[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/, "$1").replace(/<[^>]+>/g, "").trim() : "";
     };
 
+    // Atom uses <link href="...">, RSS uses <link>text</link>
+    let link = getText("link");
+    if (!link) {
+      const hrefMatch = entry.match(/<link[^>]+href="([^"]+)"[^>]*>/i);
+      link = hrefMatch ? hrefMatch[1] : "";
+    }
+
     const title = getText("title");
-    const link = getText("link");
-    const description = getText("description").slice(0, 300);
-    const pubDate = getText("pubDate");
-    const creator = getText("dc:creator") || getText("author");
+    const description = getText("description") || getText("summary") || getText("content");
+    const pubDate = getText("pubDate") || getText("published") || getText("updated");
 
     if (!title || !link) continue;
 
@@ -34,8 +46,8 @@ function parseRssXml(xml: string, sourceName: string): DiscoveredItem[] {
       source: "substack",
       title,
       url: link,
-      summary: description,
-      tags: ["newsletter", sourceName.toLowerCase().replace(/\s+/g, "-"), pubDate].filter(Boolean),
+      summary: description.slice(0, 300),
+      tags: ["newsletter", sourceName.toLowerCase().replace(/[^a-z0-9]+/g, "-"), pubDate.slice(0, 10)].filter(Boolean),
     });
   }
 
@@ -43,19 +55,22 @@ function parseRssXml(xml: string, sourceName: string): DiscoveredItem[] {
 }
 
 export async function scrapeSubstack(): Promise<DiscoveredItem[]> {
+  // Hard 10s timeout for the entire scrape
+  const timeout = AbortSignal.timeout(10000);
+
   const results = await Promise.allSettled(
     FEEDS.map(async (feed) => {
-      const res = await fetch(feed.url, { signal: AbortSignal.timeout(10000) });
+      const res = await fetch(feed.url, { ...FETCH_OPTS, signal: timeout });
       if (!res.ok) throw new Error(`${feed.name}: ${res.status}`);
       const xml = await res.text();
-      return parseRssXml(xml, feed.name);
+      return parseXml(xml, feed.name);
     })
   );
 
   const items: DiscoveredItem[] = [];
   for (const r of results) {
     if (r.status === "fulfilled") items.push(...r.value);
-    else console.error("Substack feed failed:", r.reason);
+    else console.error("Feed failed:", r.reason);
   }
   return items;
 }

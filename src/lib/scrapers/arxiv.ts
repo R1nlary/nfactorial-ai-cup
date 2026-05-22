@@ -3,7 +3,8 @@ import { DiscoveredItem } from "@/lib/types";
 export async function scrapeArxiv(): Promise<DiscoveredItem[]> {
   try {
     const res = await fetch(
-      "http://export.arxiv.org/api/query?search_query=cat:cs.AI+OR+cat:cs.CL+OR+cat:cs.LG&sortBy=submittedDate&sortOrder=descending&max_results=20"
+      "https://export.arxiv.org/api/query?search_query=cat:cs.AI+OR+cat:cs.CL+OR+cat:cs.LG&sortBy=submittedDate&sortOrder=descending&max_results=20",
+      { signal: AbortSignal.timeout(15000) }
     );
     if (!res.ok) throw new Error(`arXiv API ${res.status}`);
 
