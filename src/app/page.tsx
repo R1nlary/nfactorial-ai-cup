@@ -36,7 +36,7 @@ export default async function DashboardPage() {
               <span className="text-gradient-gold">that actually thinks.</span>
             </h1>
             <p className="text-zinc-400 text-sm sm:text-base max-w-lg leading-relaxed mb-8">
-              7 specialized agents research, write, fact-check and edit — producing
+              6 specialized agents research, write, fact-check and edit — producing
               Twitter content with real insight density, not AI slop.
             </p>
             <Link

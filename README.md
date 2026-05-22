@@ -58,9 +58,9 @@ Upload your own writing samples. The system extracts your voice patterns and app
 
 ## Tech Stack
 
-- **Framework:** Next.js 15 (App Router), TypeScript
+- **Framework:** Next.js 16 (App Router), TypeScript
 - **Styling:** Tailwind CSS 4 + shadcn/ui
-- **AI:** OpenAI API (GPT-4o-mini)
+- **AI:** OpenAI API (GPT-4o + GPT-4o-mini)
 - **Database:** PostgreSQL (Neon) via Prisma ORM 6
 - **Testing:** Vitest (38 tests)
 - **Deploy:** Vercel (fullstack)

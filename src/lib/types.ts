@@ -48,10 +48,14 @@ export interface DiscoveredItem {
 }
 
 export interface ResearchOutput {
-  themes: string[];
+  contrarianTake?: string;
   dataPoints: string[];
   angles: string[];
-  sources: string[];
+  potentialHooks?: string[];
+  keyInsight?: string;
+  // Legacy fields
+  themes?: string[];
+  sources?: string[];
 }
 
 export interface OutlineAngle {

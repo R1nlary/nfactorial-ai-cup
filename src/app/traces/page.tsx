@@ -18,7 +18,7 @@ interface Trace {
 }
 
 const AGENT_COLORS: Record<string, string> = {
-  researcher: "#f5c518",
+  research: "#f5c518",
   writer: "#e85d75",
   editor: "#60a5fa",
   "style-reviewer": "#a78bfa",

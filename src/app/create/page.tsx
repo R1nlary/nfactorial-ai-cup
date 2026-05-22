@@ -472,13 +472,19 @@ export default function CreatePage() {
                                 style={{
                                   color:
                                     STEP_COLORS[
-                                      trace.agentName === "researcher"
+                                      trace.agentName === "research"
                                         ? "Research"
                                         : trace.agentName === "writer"
                                           ? "Writer"
                                           : trace.agentName === "editor"
                                             ? "Editor"
-                                            : trace.agentName
+                                            : trace.agentName === "style-reviewer"
+                                              ? "Style Review"
+                                              : trace.agentName === "fact-checker"
+                                                ? "Fact Check"
+                                                : trace.agentName === "outline"
+                                                  ? "Outline"
+                                                  : trace.agentName
                                     ] || "#71717a",
                                 }}
                               >
