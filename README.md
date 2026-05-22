@@ -1,36 +1,99 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Cup — Twitter Content Generator
+
+Multi-agent AI system for generating high-quality X/Twitter content. Built for nFactorial's Agentic AI Engineer hiring test.
+
+## What it does
+
+This system generates smart, insightful, nuanced content for X/Twitter — not generic AI slop. It uses a pipeline of specialized agents:
+
+1. **Research Agent** — discovers themes, data points, and contrarian angles
+2. **Outline Agent** — generates multiple angles with hooks and structure
+3. **Draft Writer** — writes content matching your voice and style
+4. **Style Reviewer** — detects AI patterns and ensures natural writing
+5. **Fact Checker** — verifies claims and suggests corrections
+6. **Editor** — polishes hooks, tightens prose, final output
+
+## Architecture
+
+```
+Frontend (Next.js) → API Routes → Orchestrator → [Research → Outline → Writer → Style → FactCheck → Editor]
+                                       ↓
+                                  Trace Logger
+                                       ↓
+                                  PostgreSQL (Prisma)
+```
+
+## Features
+
+- **Content Discovery** — browse trending content from Hacker News, arXiv, and Substack
+- **Multi-format output** — tweets, threads, quote retweets, articles
+- **Voice emulation** — upload writing samples to match your style
+- **Anti-slop** — detects and rewrites AI clichés automatically
+- **Fact-checking** — verifies claims with source grounding
+- **Full traceability** — every agent call is logged with input, output, reasoning, tokens, and timing
+
+## Tech Stack
+
+- **Framework**: Next.js 14+ (App Router) with TypeScript
+- **Styling**: Tailwind CSS + shadcn/ui
+- **AI**: OpenAI API (GPT-4o / GPT-4o-mini)
+- **Database**: PostgreSQL via Prisma ORM
+- **Deploy**: Vercel (fullstack)
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+# Clone
+git clone <repo-url>
+cd nfactorial-ai-cup
+
+# Install
+pnpm install
+
+# Set up environment
+cp .env.example .env
+# Add your OPENAI_API_KEY and DATABASE_URL to .env
+
+# Set up database
+npx prisma migrate dev --name init
+
+# Run
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+OPENAI_API_KEY=sk-...        # Your OpenAI API key
+DATABASE_URL=postgresql://... # PostgreSQL connection string
+```
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+├── app/              # Next.js pages and API routes
+│   ├── page.tsx      # Dashboard
+│   ├── create/       # Content creation
+│   ├── discover/     # Content discovery feed
+│   ├── style/        # Voice/style configuration
+│   ├── traces/       # Agent trace viewer
+│   └── api/          # API routes
+├── lib/
+│   ├── agents/       # Agent logic
+│   ├── prompts/      # System prompts
+│   ├── scrapers/     # Content discovery scrapers
+│   ├── traces/       # Trace logging
+│   ├── anti-slop.ts  # Banned phrase detection
+│   ├── openai.ts     # OpenAI client
+│   ├── db.ts         # Prisma client
+│   └── types.ts      # Shared TypeScript types
+└── components/
+    └── ui/           # shadcn/ui components
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Agent Traces
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+All agent interactions are logged with full input/output, reasoning, tokens used, and execution time. View them in the Traces page or export as JSON.

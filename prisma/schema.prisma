@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model StyleProfile {
+  id          String     @id @default(cuid())
+  name        String
+  samples     String
+  description String?
+  createdAt   DateTime   @default(now())
+  contents    Content[]
+}
+
+model DiscoveredContent {
+  id           String   @id @default(cuid())
+  source       String
+  title        String
+  url          String   @unique
+  summary      String?
+  score        Int?
+  tags         String
+  discoveredAt DateTime @default(now())
+}
+
+model Content {
+  id             String       @id @default(cuid())
+  type           String       @default("tweet")
+  topic          String
+  input          String
+  drafts         String
+  finalContent   String?
+  status         String       @default("draft")
+  agentTraces    AgentTrace[]
+  styleProfile   StyleProfile? @relation(fields: [styleProfileId], references: [id])
+  styleProfileId String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model AgentTrace {
+  id         String    @id @default(cuid())
+  contentId  String?
+  content    Content?  @relation(fields: [contentId], references: [id])
+  agentName  String
+  input      String
+  output     String
+  reasoning  String?
+  model      String
+  tokens     String?
+  durationMs Int
+  timestamp  DateTime  @default(now())
+}
