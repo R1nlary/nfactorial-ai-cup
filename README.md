@@ -1,8 +1,8 @@
 # Prism — Multi-Agent Twitter Content Engine
 
-> **nFactorial Agentic AI Engineer Hiring Test** — Bauyrzhan Shamen
+> **nFactorial Agentic AI Engineer Hiring Test** — Bauyrzhan Samen
 
-Multi-agent AI system that generates high-quality, non-generic X/Twitter content through a 6-step agent pipeline with iterative critique, fact-checking, and style emulation.
+Multi-agent AI system that generates high-quality, non-generic X/Twitter content through a 6-step agent pipeline with iterative critique, fact-checking, style emulation, file upload, memory, and distribution planning.
 
 **Live:** https://nfactorial-ai-cup.vercel.app/
 **Repo:** https://github.com/R1nlary/nfactorial-ai-cup
@@ -11,12 +11,12 @@ Multi-agent AI system that generates high-quality, non-generic X/Twitter content
 
 ## How It Works
 
-You give it a topic → 6 specialized agents process it in sequence → you get polished, fact-checked content that reads like a human wrote it.
+You give it a topic → 6 specialized agents process it in sequence → you get polished, fact-checked content that reads like a human wrote it. Optionally: a Distribution Agent plans your posting strategy.
 
 ### Agent Pipeline
 
 ```
-Research → Outline → Writer → Style Review + Fact Check (parallel) → Editor
+Research → Outline → Writer → Style Review + Fact Check (parallel) → Editor → Distribution (optional)
                                               ↓
                                     Iterative Critique Loop
                                     (if slop score > 30, rewrites)
@@ -30,12 +30,13 @@ Research → Outline → Writer → Style Review + Fact Check (parallel) → Edi
 | 4a | **Style Reviewer** | Detects AI patterns, bans clichés, measures naturalness |
 | 4b | **Fact Checker** | Verifies claims, flags unsupported assertions |
 | 5 | **Editor** | Polishes using all feedback — style edits, fact corrections, slop phrases |
+| 6 | **Distribution** | Plans posting strategy, viral potential, engagement hooks |
 
 If the anti-slop score is > 30 or naturalness < 70, the Writer re-runs with feedback (max 2 iterations).
 
 ### Anti-Slop System
 
-The system maintains a list of banned AI clichés ("delve into", "game-changer", "it's worth noting", etc.). After the Writer produces a draft:
+48 banned AI clichés ("delve into", "game-changer", "it's worth noting", etc.). After the Writer produces a draft:
 
 1. `detectSlop()` scores the text and extracts offending phrases
 2. `cleanSlop()` rewrites flagged phrases
@@ -53,6 +54,18 @@ Each discovered item has a "Generate from this" link to create content about it.
 ### Style Profiles
 
 Upload your own writing samples. The system extracts your voice patterns and applies them during generation.
+
+### File Upload
+
+Upload .txt, .md, .csv, .json files as additional context. The content is extracted and passed to all agents for grounded generation.
+
+### Memory System
+
+Save preferences (tone, audience, topics to avoid). The system injects them as context in every generation, creating consistency across sessions.
+
+### Distribution Agent
+
+After generating content, get a posting strategy: best time to post, viral potential score (1-10), engagement hooks, follow-up strategy, and cross-post suggestions.
 
 ---
 
@@ -74,14 +87,18 @@ Upload your own writing samples. The system extracts your voice patterns and app
 src/
 ├── app/
 │   ├── page.tsx              # Dashboard with pipeline visualization
-│   ├── create/page.tsx       # Content generation with live pipeline progress
+│   ├── create/page.tsx       # Content generation with file upload + distribution
 │   ├── discover/page.tsx     # Content discovery from HN, arXiv, newsletters
 │   ├── style/page.tsx        # Voice profile management
+│   ├── memory/page.tsx       # User preferences and memory
 │   ├── traces/page.tsx       # Agent trace viewer with stats
 │   └── api/
 │       ├── generate/route.ts         # Main generation endpoint
 │       ├── quote-retweet/route.ts    # Quote retweet generation
 │       ├── discover/route.ts         # Content discovery endpoint
+│       ├── distribute/route.ts       # Distribution planning
+│       ├── upload/route.ts           # File upload for context
+│       ├── memory/route.ts           # User memory CRUD
 │       ├── style/route.ts            # Style profile CRUD
 │       └── traces/route.ts           # Trace export
 ├── lib/
@@ -93,7 +110,8 @@ src/
 │   │   ├── writer.ts         # Draft writer
 │   │   ├── style-reviewer.ts # AI pattern detector
 │   │   ├── fact-checker.ts   # Claim verification
-│   │   └── editor.ts         # Final polish
+│   │   ├── editor.ts         # Final polish
+│   │   └── distribution.ts   # Distribution strategy
 │   ├── prompts/              # System prompts for each agent
 │   ├── scrapers/             # HN, arXiv, Substack scrapers
 │   ├── traces/logger.ts      # Trace persistence
@@ -105,7 +123,7 @@ src/
 │   ├── navigation.tsx        # Nav with active state + mobile menu
 │   └── ui/                   # shadcn/ui components
 agent-traces/
-└── traces.json               # 39 traces from 5 generations
+└── traces.json               # 50 traces from 8 generations
 ```
 
 ---
@@ -173,6 +191,9 @@ pnpm test
 | `/api/generate` | POST | Generate content (tweet, thread, article) |
 | `/api/quote-retweet` | POST | Generate quote retweet with angle |
 | `/api/discover` | GET | Fetch trending content (`?source=all\|hackernews\|arxiv\|substack`) |
+| `/api/distribute` | POST | Generate distribution strategy for content |
+| `/api/upload` | POST/GET | Upload files as context / list uploaded files |
+| `/api/memory` | GET/POST/DELETE | Manage user preferences and memory |
 | `/api/style` | GET/POST | List or create style profiles |
 | `/api/style/[id]` | DELETE | Delete a style profile |
 | `/api/traces` | GET | List all agent traces (`?export=true` for raw JSON) |
@@ -191,7 +212,7 @@ Response includes `content`, `traces` (per-agent details), and `iterations` coun
 
 ## Agent Traces
 
-All 39 traces from 5 test generations are saved in `agent-traces/traces.json`. Each trace records:
+50 traces from 8 test generations are saved in `agent-traces/traces.json`. Each trace records:
 
 - Agent name, model used
 - Full input and output
@@ -199,4 +220,4 @@ All 39 traces from 5 test generations are saved in `agent-traces/traces.json`. E
 - Execution time in ms
 - Reasoning (where applicable)
 
-8 unique agents across 9 content pieces.
+7 unique agents across 8 content pieces.
